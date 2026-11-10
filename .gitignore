@@ -4,6 +4,15 @@ coverage/
 .env
 .env.*
 !.env.example
+**/*service-account*.json
+**/*serviceaccount*.json
+**/*firebase-admin*.json
+**/*credential*.json
+**/*credentials*.json
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
 backend/.env
 backend/.venv/
 backend/__pycache__/
