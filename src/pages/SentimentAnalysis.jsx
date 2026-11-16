@@ -225,7 +225,7 @@ function AbsaSection({
                         margin={{ top: 12, right: 12, left: 4, bottom: 56 }}
                       >
                         <CartesianGrid
-                          stroke="#293647"
+                          stroke="#e2e8f0"
                           strokeDasharray="3 3"
                           vertical={false}
                         />
@@ -234,7 +234,7 @@ function AbsaSection({
                           dataKey="aspek"
                           height={58}
                           interval={0}
-                          tick={{ fill: "#aab8ca", fontSize: 11 }}
+                          tick={{ fill: "#64748b", fontSize: 11 }}
                           tickLine={false}
                           angle={-15}
                           textAnchor="end"
@@ -242,7 +242,7 @@ function AbsaSection({
                         <YAxis
                           allowDecimals={false}
                           axisLine={false}
-                          tick={{ fill: "#8293aa", fontSize: 11 }}
+                          tick={{ fill: "#94a3b8", fontSize: 11 }}
                           tickLine={false}
                           width={40}
                         />
@@ -251,13 +251,13 @@ function AbsaSection({
                           dataKey="sentimen_positif"
                           name="Positif"
                           stackId="sentimen"
-                          fill="#50c49a"
+                          fill="#16a34a"
                         />
                         <Bar
                           dataKey="sentimen_negatif"
                           name="Negatif"
                           stackId="sentimen"
-                          fill="#f07878"
+                          fill="#dc2626"
                           radius={[5, 5, 0, 0]}
                         />
                       </BarChart>
@@ -681,7 +681,7 @@ function SentimentAnalysis() {
                     barGap={5}
                   >
                     <CartesianGrid
-                      stroke="#293647"
+                      stroke="#e2e8f0"
                       strokeDasharray="3 3"
                       vertical={false}
                     />
@@ -690,7 +690,7 @@ function SentimentAnalysis() {
                       dataKey="label"
                       height={78}
                       interval={0}
-                      tick={{ fill: "#aab8ca", fontSize: 11 }}
+                      tick={{ fill: "#64748b", fontSize: 11 }}
                       tickLine={false}
                       angle={-18}
                       textAnchor="end"
@@ -698,7 +698,7 @@ function SentimentAnalysis() {
                     <YAxis
                       axisLine={false}
                       domain={[0, 100]}
-                      tick={{ fill: "#8293aa", fontSize: 11 }}
+                      tick={{ fill: "#94a3b8", fontSize: 11 }}
                       tickFormatter={(value) => `${percentageFormatter.format(value)}%`}
                       tickLine={false}
                       width={64}
@@ -708,13 +708,13 @@ function SentimentAnalysis() {
                     <Bar
                       dataKey="positive"
                       name="Positif"
-                      fill="#50c49a"
+                      fill="#16a34a"
                       radius={[5, 5, 0, 0]}
                     />
                     <Bar
                       dataKey="negative"
                       name="Negatif"
-                      fill="#f07878"
+                      fill="#dc2626"
                       radius={[5, 5, 0, 0]}
                     />
                   </BarChart>

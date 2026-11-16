@@ -251,19 +251,19 @@ function Dashboard() {
                       margin={{ top: 12, right: 12, left: 4, bottom: 4 }}
                     >
                       <CartesianGrid
-                        stroke="#293647"
+                        stroke="#e2e8f0"
                         strokeDasharray="3 3"
                         vertical={false}
                       />
                       <XAxis
                         axisLine={false}
                         dataKey="cluster"
-                        tick={{ fill: "#aab8ca", fontSize: 12 }}
+                        tick={{ fill: "#64748b", fontSize: 12 }}
                         tickLine={false}
                       />
                       <YAxis
                         axisLine={false}
-                        tick={{ fill: "#8293aa", fontSize: 11 }}
+                        tick={{ fill: "#94a3b8", fontSize: 11 }}
                         tickFormatter={formatNumber}
                         tickLine={false}
                         width={72}
@@ -271,16 +271,16 @@ function Dashboard() {
                       <Tooltip
                         formatter={(value) => [formatNumber(value), "Pemain"]}
                         contentStyle={{
-                          border: "1px solid #344357",
+                          border: "1px solid #cbd5e1",
                           borderRadius: 10,
-                          background: "#172230",
-                          color: "#e8edf5",
+                          background: "#ffffff",
+                          color: "#1e293b",
                         }}
                       />
                       <Bar
                         dataKey="players"
                         name="Pemain"
-                        fill="#6ba6f7"
+                        fill="#2563eb"
                         radius={[5, 5, 0, 0]}
                       />
                     </BarChart>
@@ -308,19 +308,19 @@ function Dashboard() {
                       margin={{ top: 12, right: 12, left: 4, bottom: 4 }}
                     >
                       <CartesianGrid
-                        stroke="#293647"
+                        stroke="#e2e8f0"
                         strokeDasharray="3 3"
                         vertical={false}
                       />
                       <XAxis
                         axisLine={false}
                         dataKey="cluster"
-                        tick={{ fill: "#aab8ca", fontSize: 12 }}
+                        tick={{ fill: "#64748b", fontSize: 12 }}
                         tickLine={false}
                       />
                       <YAxis
                         axisLine={false}
-                        tick={{ fill: "#8293aa", fontSize: 11 }}
+                        tick={{ fill: "#94a3b8", fontSize: 11 }}
                         tickFormatter={(value) => `${formatNumber(value)}%`}
                         tickLine={false}
                         width={72}
@@ -331,23 +331,23 @@ function Dashboard() {
                           name,
                         ]}
                         contentStyle={{
-                          border: "1px solid #344357",
+                          border: "1px solid #cbd5e1",
                           borderRadius: 10,
-                          background: "#172230",
-                          color: "#e8edf5",
+                          background: "#ffffff",
+                          color: "#1e293b",
                         }}
                       />
                       <Legend />
                       <Bar
                         dataKey="positive"
                         name="Positif"
-                        fill="#50c49a"
+                        fill="#16a34a"
                         radius={[4, 4, 0, 0]}
                       />
                       <Bar
                         dataKey="negative"
                         name="Negatif"
-                        fill="#f07878"
+                        fill="#dc2626"
                         radius={[4, 4, 0, 0]}
                       />
                     </BarChart>
