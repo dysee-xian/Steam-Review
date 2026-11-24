@@ -1,24 +1,35 @@
-import { doc, getDocFromServer } from "firebase/firestore";
-import { db } from "./firebase";
+import { get, ref } from "firebase/database";
+import { database } from "./firebase";
 
 export async function getAbsaSummary() {
+  const path = "steam_review_analytics/v1/absa/aspect_summary";
+
   try {
-    const snapshot = await getDocFromServer(
-      doc(db, "absa_summaries", "aspect_sentiment"),
-    );
+    const snapshot = await get(ref(database, path));
 
     if (!snapshot.exists()) {
-      throw new Error(
-        "Dokumen absa_summaries/aspect_sentiment tidak ditemukan.",
-      );
+      throw new Error(`Node ${path} tidak ditemukan.`);
     }
 
-    return snapshot.data();
+    const data = snapshot.val();
+    if (!data || typeof data !== "object") {
+      throw new Error(`Format node ${path} tidak valid.`);
+    }
+
+    const entries = Array.isArray(data)
+      ? data.map((row, index) => [String(index), row])
+      : Object.entries(data);
+
+    return entries
+      .sort(([first], [second]) => Number(first) - Number(second))
+      .map(([id, row]) => {
+        if (!row || typeof row !== "object" || Array.isArray(row)) {
+          throw new Error(`Data aspek pada node ${path}/${id} tidak valid.`);
+        }
+        return { ...row, id };
+      });
   } catch (error) {
     const details = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `Gagal mengambil absa_summaries/aspect_sentiment: ${details}`,
-      { cause: error },
-    );
+    throw new Error(`Gagal membaca ${path}: ${details}`, { cause: error });
   }
 }

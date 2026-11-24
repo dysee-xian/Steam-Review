@@ -1,0 +1,95 @@
+{
+    "engagement_prediction": {
+        "algorithm": "HistGradientBoostingClassifier",
+        "model_file": "engagement_decline_model.joblib",
+        "threshold": 0.62,
+        "feature_columns": [
+            "review_count_2019",
+            "unique_games_2019",
+            "reviews_q1",
+            "reviews_q2",
+            "reviews_q3",
+            "reviews_q4",
+            "avg_playtime_2019",
+            "avg_playtime_at_review_2019",
+            "avg_games_owned_2019",
+            "avg_votes_up_2019",
+            "avg_votes_funny_2019",
+            "avg_weighted_score_2019",
+            "positive_ratio_2019",
+            "days_since_last_review",
+            "active_quarters"
+        ],
+        "target": "engagement_decline",
+        "class_labels": {
+            "0": "Tidak Menurun",
+            "1": "Menurun"
+        }
+    },
+    "sentiment_analysis": {
+        "model_directory": "distilbert_sentiment",
+        "model_name": "distilbert/distilbert-base-uncased-finetuned-sst-2-english",
+        "max_length": 256
+    },
+    "absa": {
+        "method": "Keyword matching + DistilBERT",
+        "aspect_keywords": {
+            "Gameplay": [
+                "gameplay",
+                "combat",
+                "controls",
+                "mechanics",
+                "difficulty"
+            ],
+            "Graphics": [
+                "graphics",
+                "visual",
+                "visuals",
+                "art style",
+                "texture"
+            ],
+            "Story": [
+                "story",
+                "plot",
+                "narrative",
+                "character",
+                "dialogue"
+            ],
+            "Performance": [
+                "performance",
+                "lag",
+                "fps",
+                "crash",
+                "stuttering"
+            ],
+            "Multiplayer": [
+                "multiplayer",
+                "online",
+                "co-op",
+                "coop",
+                "server"
+            ]
+        }
+    },
+    "saw": {
+        "method": "Simple Additive Weighting",
+        "normalization": "P95",
+        "criteria_weights": {
+            "review_count": 0.25,
+            "avg_playtime_hours": 0.3,
+            "avg_games_owned": 0.2,
+            "avg_helpful_votes": 0.25
+        },
+        "normalization_values": {
+            "review_count_p95": 11,
+            "avg_playtime_hours_p95": 962.480074,
+            "avg_games_owned_p95": 550.434379,
+            "avg_helpful_votes_p95": 6.481055
+        }
+    },
+    "library_versions": {
+        "scikit_learn": "1.6.1",
+        "transformers": "5.20.2",
+        "torch": "2.11.0+cpu"
+    }
+}

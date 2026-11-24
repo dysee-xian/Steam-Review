@@ -1,50 +1,21 @@
-
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs
-} from "firebase/firestore";
-
-import { db } from "./firebase";
+import { ref, get } from "firebase/database";
+import { database } from "./firebase";
 
 export async function testFirebase() {
   try {
-    console.log("Menghubungkan ke Firebase...");
+    const dbRef = ref(database, "steam_review_analytics/v1");
+    const snapshot = await get(dbRef);
 
-    // Mengambil data dashboard
-    const dashboardRef = doc(
-      db,
-      "dashboard_summaries",
-      "persona_dashboard"
-    );
-
-    const dashboardSnapshot = await getDoc(dashboardRef);
-
-    if (dashboardSnapshot.exists()) {
-      console.log("Data Dashboard:", dashboardSnapshot.data());
+    if (snapshot.exists()) {
+      console.log("Firebase berhasil terhubung!");
+      console.log("Data DPRF:", snapshot.val());
+      return snapshot.val();
     } else {
-      console.log("Dokumen dashboard tidak ditemukan.");
+      console.log("Koneksi berhasil, tetapi data tidak ditemukan.");
+      return null;
     }
-
-    // Mengambil data personas
-    const personasSnapshot = await getDocs(
-      collection(db, "personas")
-    );
-
-    const personasData = personasSnapshot.docs.map((item) => ({
-      id: item.id,
-      ...item.data()
-    }));
-
-    console.log("Jumlah data personas:", personasSnapshot.size);
-    console.log("Data Personas:", personasData);
-
-    console.log("Pengujian Firebase selesai!");
-
   } catch (error) {
     console.error("Gagal mengambil data Firebase:", error);
+    throw error;
   }
 }
-
-export default testFirebase;

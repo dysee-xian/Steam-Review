@@ -25,3 +25,6 @@ backend/data/processed/*
 backend/saved_models/*
 !backend/saved_models/.gitkeep
 *.ipynb_checkpoints/
+
+# Large machine learning model files
+backend/app/models/distilbert_sentiment/*.safetensors

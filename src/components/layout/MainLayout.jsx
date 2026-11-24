@@ -1,5 +1,5 @@
 import { Outlet } from "react-router-dom";
-import Navbar from "./Navbar";
+import PageHeader from "./PageHeader";
 import Sidebar from "./Sidebar";
 
 function MainLayout() {
@@ -7,7 +7,7 @@ function MainLayout() {
     <div className="app-layout">
       <Sidebar />
       <div className="app-main">
-        <Navbar />
+        <PageHeader />
         <main className="page-content">
           <Outlet />
         </main>

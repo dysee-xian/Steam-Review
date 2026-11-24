@@ -1,229 +1,104 @@
 import { useEffect, useMemo, useState } from "react";
-import { getPersonas } from "../services/personaService";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { getPersonaBatchAnalysis } from "../services/api";
+import {
+  chartAxis,
+  chartCursorStyle,
+  chartGridColor,
+  chartPalette,
+  chartTooltipStyle,
+} from "../components/chartTheme";
+import HeroBanner from "../components/ui/HeroBanner";
 
-const numberFormatter = new Intl.NumberFormat("id-ID");
-const percentageFormatter = new Intl.NumberFormat("id-ID", {
-  maximumFractionDigits: 2,
+const numberFormatter = new Intl.NumberFormat("id-ID", {
+  maximumFractionDigits: 4,
 });
 
-function isFiniteNumber(value) {
-  return typeof value === "number" && Number.isFinite(value);
-}
-
 function formatNumber(value) {
-  return isFiniteNumber(value)
+  return typeof value === "number" && Number.isFinite(value)
     ? numberFormatter.format(value)
-    : "Data belum tersedia";
-}
-
-function formatPercentage(value) {
-  return isFiniteNumber(value)
-    ? `${percentageFormatter.format(value)}%`
-    : "Data belum tersedia";
-}
-
-function formatPlaytime(value) {
-  if (!isFiniteNumber(value)) {
-    return "Data belum tersedia";
-  }
-
-  const hours = value / 60;
-  return `${new Intl.NumberFormat("id-ID", {
-    maximumFractionDigits: 1,
-  }).format(hours)} jam`;
-}
-
-function getPercentageWidth(value) {
-  return isFiniteNumber(value) ? Math.min(Math.max(value, 0), 100) : 0;
-}
-
-function PersonaCard({ persona }) {
-  const positiveWidth = getPercentageWidth(persona.persentase_positif);
-  const negativeWidth = getPercentageWidth(persona.persentase_negatif);
-
-  return (
-    <article className="persona-detail-card">
-      <header className="persona-detail-heading">
-        <div>
-          <p className="persona-detail-overline">Persona</p>
-          <h3>
-            {typeof persona.nama_persona === "string" &&
-            persona.nama_persona.trim()
-              ? persona.nama_persona
-              : "Data belum tersedia"}
-          </h3>
-        </div>
-        <span className="persona-detail-cluster">
-          {isFiniteNumber(persona.cluster)
-            ? `Cluster ${persona.cluster}`
-            : "Cluster belum tersedia"}
-        </span>
-      </header>
-
-      <div className="persona-detail-player-count">
-        <span>Jumlah pemain</span>
-        <strong>{formatNumber(persona.jumlah_pemain)}</strong>
-      </div>
-
-      <dl className="persona-metrics">
-        <div className="persona-metric">
-          <dt>Median jumlah review</dt>
-          <dd>{formatNumber(persona.median_review)}</dd>
-        </div>
-        <div className="persona-metric">
-          <dt>Median playtime saat review</dt>
-          <dd>{formatPlaytime(persona.median_playtime_review)}</dd>
-        </div>
-        <div className="persona-metric">
-          <dt>Median total playtime</dt>
-          <dd>{formatPlaytime(persona.median_playtime_total)}</dd>
-        </div>
-      </dl>
-
-      <section
-        className="persona-sentiment-section"
-        aria-label={`Sentimen ${persona.nama_persona || "persona"}`}
-      >
-        <h4>Sentimen</h4>
-        <div className="persona-sentiment-values">
-          <span>
-            <i className="sentiment-dot positive" aria-hidden="true" />
-            Positif <strong>{formatPercentage(persona.persentase_positif)}</strong>
-          </span>
-          <span>
-            <i className="sentiment-dot negative" aria-hidden="true" />
-            Negatif <strong>{formatPercentage(persona.persentase_negatif)}</strong>
-          </span>
-        </div>
-        <div
-          className="persona-sentiment-bars"
-          role="img"
-          aria-label={`Positif ${formatPercentage(persona.persentase_positif)}, negatif ${formatPercentage(persona.persentase_negatif)}`}
-        >
-          <span
-            className="persona-sentiment-bar positive"
-            style={{ width: `${positiveWidth}%` }}
-          />
-          <span
-            className="persona-sentiment-bar negative"
-            style={{ width: `${negativeWidth}%` }}
-          />
-        </div>
-      </section>
-    </article>
-  );
+    : "—";
 }
 
 function PlayerPersona() {
-  const [personas, setPersonas] = useState([]);
+  const [analysis, setAnalysis] = useState(null);
   const [status, setStatus] = useState("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [selectedCluster, setSelectedCluster] = useState("all");
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
 
-    async function loadPersonas() {
+    async function loadAnalysis() {
       setStatus("loading");
-      setErrorMessage("");
-
       try {
-        const data = await getPersonas();
+        const result = await getPersonaBatchAnalysis();
         if (active) {
-          setPersonas(data);
+          setAnalysis(result);
           setStatus("success");
         }
-      } catch (error) {
+      } catch {
         if (active) {
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : "Terjadi kesalahan saat mengambil data persona.",
-          );
           setStatus("error");
         }
       }
     }
 
-    loadPersonas();
-
+    loadAnalysis();
     return () => {
       active = false;
     };
   }, [reloadKey]);
 
-  const clusters = useMemo(
+  const groups = analysis?.persona_groups ?? [];
+  const contributionData = useMemo(
     () =>
-      [...new Set(personas.filter((persona) => isFiniteNumber(persona.cluster))
-        .map((persona) => persona.cluster))].sort((first, second) => first - second),
-    [personas],
+      (analysis?.criteria_contributions ?? []).map((item) => ({
+        criterion: item.criterion.replace(/_/g, " "),
+        contribution: item.contribution,
+      })),
+    [analysis],
   );
-
-  const visiblePersonas = useMemo(() => {
-    const filteredPersonas =
-      selectedCluster === "all"
-        ? personas
-        : personas.filter(
-            (persona) => String(persona.cluster) === selectedCluster,
-          );
-
-    return [...filteredPersonas].sort((first, second) => {
-      const firstCluster = isFiniteNumber(first.cluster)
-        ? first.cluster
-        : Number.POSITIVE_INFINITY;
-      const secondCluster = isFiniteNumber(second.cluster)
-        ? second.cluster
-        : Number.POSITIVE_INFINITY;
-      return firstCluster - secondCluster;
-    });
-  }, [personas, selectedCluster]);
+  const groupScoreData = useMemo(
+    () =>
+      groups.map((group) => ({
+        persona: group.persona,
+        average: group.avg_saw_score,
+      })),
+    [groups],
+  );
 
   return (
     <div className="persona-page">
-      <div className="persona-page-heading">
-        <div>
-          <p className="eyebrow">Profil hasil clustering</p>
-          <h2>Player Persona</h2>
-          <p className="persona-page-description">
-            Ringkasan karakteristik pemain berdasarkan cluster dari data
-            Firestore.
-          </p>
-          <p className="persona-page-note">
-            Nama persona adalah label deskriptif hasil clustering, bukan
-            kategori psikologis yang tervalidasi.
-          </p>
-        </div>
-        {status === "success" && personas.length > 0 && (
-          <label className="persona-filter">
-            <span>Filter cluster</span>
-            <select
-              value={selectedCluster}
-              onChange={(event) => setSelectedCluster(event.target.value)}
-            >
-              <option value="all">Semua cluster</option>
-              {clusters.map((cluster) => (
-                <option key={cluster} value={String(cluster)}>
-                  Cluster {cluster}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-      </div>
+      <HeroBanner
+        label="KARAKTERISTIK PEMAIN (SAW)"
+        title="Karakteristik Pemain dengan SAW"
+        description="Simple Additive Weighting (SAW) menggabungkan indikator ulasan, waktu bermain, game yang dimiliki, dan suara membantu untuk merangkum karakteristik kelompok pemain."
+        aside={<span className="dashboard-source">Ringkasan pemain</span>}
+      />
 
       {status === "loading" && (
         <div className="dashboard-state" role="status" aria-live="polite">
           <span className="loading-indicator" aria-hidden="true" />
-          <span>Memuat persona dari Firestore...</span>
+          <span>Menyiapkan ringkasan karakteristik pemain...</span>
         </div>
       )}
 
       {status === "error" && (
         <div className="dashboard-error" role="alert">
           <div>
-            <h3>Data persona gagal dimuat</h3>
-            <p>{errorMessage}</p>
+            <h3>Analisis persona gagal dimuat</h3>
+            <p>
+              Ringkasan pemain belum dapat dimuat. Silakan coba kembali.
+            </p>
           </div>
           <button
             className="dashboard-retry"
@@ -235,31 +110,256 @@ function PlayerPersona() {
         </div>
       )}
 
-      {status === "success" && personas.length === 0 && (
+      {status === "success" && analysis?.analysis_status === "unavailable" && (
         <div className="dashboard-empty" role="status">
-          Data persona belum tersedia di Firestore.
+          Ringkasan karakteristik pemain belum tersedia. Skor tidak ditampilkan
+          tanpa data pendukung yang memadai.
         </div>
       )}
 
-      {status === "success" && personas.length > 0 && (
+      {status === "success" && analysis?.analysis_status === "summary_only" && (
         <>
-          {visiblePersonas.length > 0 ? (
-            <section
-              className="persona-detail-grid"
-              aria-label="Daftar persona"
-            >
-              {visiblePersonas.map((persona, index) => (
-                <PersonaCard
-                  key={persona.id ?? `persona-${index}`}
-                  persona={persona}
-                />
-              ))}
-            </section>
-          ) : (
-            <div className="dashboard-empty" role="status">
-              Tidak ada persona untuk cluster yang dipilih.
+          <div className="dashboard-empty" role="status">
+            Informasi yang tersedia saat ini berupa ringkasan per kelompok,
+            bukan catatan setiap pemain. Karena itu skor tertinggi/terendah,
+            sebaran skor individual, dan hasil per pemain belum dapat
+            ditampilkan.
+          </div>
+
+          <section className="dashboard-stat-grid" aria-label="Ringkasan SAW">
+            <article className="dashboard-stat-card">
+              <p className="dashboard-stat-label">
+                Pemain dalam ringkasan kelompok
+              </p>
+              <p className="dashboard-stat-value">
+                {formatNumber(analysis.players_in_summary)}
+              </p>
+            </article>
+            <article className="dashboard-stat-card">
+              <p className="dashboard-stat-label">
+                Rata-rata skor SAW dari agregat
+              </p>
+              <p className="dashboard-stat-value">
+                {formatNumber(analysis.average_saw_score)}
+              </p>
+            </article>
+            <article className="dashboard-stat-card">
+              <p className="dashboard-stat-label">
+                Skor tertinggi individual
+              </p>
+              <p className="dashboard-stat-value">—</p>
+            </article>
+            <article className="dashboard-stat-card">
+              <p className="dashboard-stat-label">
+                Skor terendah individual
+              </p>
+              <p className="dashboard-stat-value">—</p>
+            </article>
+          </section>
+
+          <section
+            className="sentiment-section"
+            aria-labelledby="persona-score-chart-title"
+          >
+            <div className="sentiment-section-heading">
+              <div>
+                <h3 id="persona-score-chart-title">
+                  Rata-rata skor SAW per kelompok
+                </h3>
+                <p>
+                  Perbandingan ini menunjukkan nilai rata-rata kelompok, bukan
+                  sebaran skor setiap pemain.
+                </p>
+              </div>
             </div>
-          )}
+            {groupScoreData.length > 0 ? (
+              <div className="sentiment-chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={groupScoreData}>
+                    <CartesianGrid
+                      stroke={chartGridColor}
+                      strokeDasharray="3 3"
+                      vertical={false}
+                    />
+                    <XAxis dataKey="persona" tick={chartAxis} />
+                    <YAxis
+                      tick={chartAxis}
+                      tickFormatter={formatNumber}
+                      width={78}
+                    />
+                    <Tooltip
+                      contentStyle={chartTooltipStyle}
+                      cursor={chartCursorStyle}
+                      formatter={(value) => [
+                        formatNumber(value),
+                        "Rata-rata skor SAW",
+                      ]}
+                    />
+                    <Bar
+                      dataKey="average"
+                      name="Rata-rata skor SAW"
+                      radius={[5, 5, 0, 0]}
+                    >
+                      {groupScoreData.map((item, index) => (
+                        <Cell
+                          key={item.persona}
+                          fill={
+                            [
+                              chartPalette.blue,
+                              chartPalette.lavender,
+                              chartPalette.teal,
+                              chartPalette.sage,
+                              chartPalette.amber,
+                              chartPalette.rose,
+                            ][index % 6]
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="dashboard-empty">
+                Data agregat skor persona belum tersedia.
+              </div>
+            )}
+          </section>
+
+          <section
+            className="sentiment-section"
+            aria-labelledby="persona-contribution-title"
+          >
+            <div className="sentiment-section-heading">
+              <div>
+                <h3 id="persona-contribution-title">
+                  Kontribusi indikator terhadap skor SAW
+                </h3>
+                <p>
+                  Dihitung dari rata-rata indikator kelompok menggunakan bobot
+                  dan acuan normalisasi yang ditetapkan.
+                </p>
+              </div>
+            </div>
+            {contributionData.length > 0 ? (
+              <div className="sentiment-chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={contributionData}>
+                    <CartesianGrid
+                      stroke={chartGridColor}
+                      strokeDasharray="3 3"
+                      vertical={false}
+                    />
+                    <XAxis dataKey="criterion" tick={chartAxis} />
+                    <YAxis
+                      tick={chartAxis}
+                      tickFormatter={formatNumber}
+                      width={78}
+                    />
+                    <Tooltip
+                      contentStyle={chartTooltipStyle}
+                      cursor={chartCursorStyle}
+                      formatter={(value) => [
+                        formatNumber(value),
+                        "Kontribusi",
+                      ]}
+                    />
+                    <Bar
+                      dataKey="contribution"
+                      name="Kontribusi SAW"
+                      radius={[5, 5, 0, 0]}
+                    >
+                      {contributionData.map((item, index) => (
+                        <Cell
+                          key={item.criterion}
+                          fill={
+                            [
+                              chartPalette.blue,
+                              chartPalette.sage,
+                              chartPalette.lavender,
+                              chartPalette.rose,
+                              chartPalette.amber,
+                              chartPalette.teal,
+                            ][index % 6]
+                          }
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="dashboard-empty">
+                Kontribusi kriteria belum dapat dihitung.
+              </div>
+            )}
+          </section>
+
+          <section
+            className="sentiment-section"
+            aria-labelledby="persona-group-table-title"
+          >
+            <div className="sentiment-section-heading">
+              <div>
+                <h3 id="persona-group-table-title">
+                  Ringkasan kelompok pemain
+                </h3>
+                <p>
+                  Tabel ini menunjukkan jumlah pemain dan rata-rata indikator
+                  pada setiap kelompok.
+                </p>
+              </div>
+            </div>
+            {groups.length > 0 ? (
+              <div className="absa-table-wrapper">
+                <table className="absa-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Persona</th>
+                      <th scope="col">Pemain</th>
+                      <th scope="col">Rata-rata skor SAW</th>
+                      <th scope="col">Rata-rata ulasan</th>
+                      <th scope="col">Rata-rata waktu bermain</th>
+                      <th scope="col">Rata-rata game dimiliki</th>
+                      <th scope="col">Rata-rata suara membantu</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groups.map((group) => (
+                      <tr key={group.source_key}>
+                        <th scope="row">{group.persona}</th>
+                        <td>{formatNumber(group.total_players)}</td>
+                        <td>{formatNumber(group.avg_saw_score)}</td>
+                        <td>
+                          {formatNumber(group.avg_criteria.review_count)}
+                        </td>
+                        <td>
+                          {formatNumber(
+                            group.avg_criteria.avg_playtime_hours,
+                          )}
+                        </td>
+                        <td>
+                          {formatNumber(group.avg_criteria.avg_games_owned)}
+                        </td>
+                        <td>
+                          {formatNumber(group.avg_criteria.avg_helpful_votes)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="dashboard-empty">
+                Ringkasan kelompok persona tidak tersedia.
+              </div>
+            )}
+          </section>
+
+          <div className="dashboard-empty" role="status">
+            Data individual belum tersedia. Hasil per pemain dan distribusi
+            skor akan tetap kosong sampai catatan pemain tersedia.
+          </div>
         </>
       )}
     </div>

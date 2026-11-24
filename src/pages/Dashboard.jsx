@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
+  Cell,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
+import { MessageSquareText, UserRound, Users } from "lucide-react";
 import { getDashboardSummary } from "../services/dashboardService";
 import { getPersonas } from "../services/personaService";
+import {
+  chartTooltipStyle,
+  sentimentColors,
+} from "../components/chartTheme";
+import ChartCard from "../components/ui/ChartCard";
+import HeroBanner from "../components/ui/HeroBanner";
+import StatCard from "../components/ui/StatCard";
 
-const numberFormatter = new Intl.NumberFormat("id-ID");
-const percentageFormatter = new Intl.NumberFormat("id-ID", {
+const numberFormatter = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 2,
 });
 
@@ -27,100 +31,81 @@ function formatNumber(value) {
 
 function formatPercentage(value) {
   return isFiniteNumber(value)
-    ? `${percentageFormatter.format(value)}%`
+    ? `${numberFormatter.format(value)}%`
     : "—";
 }
 
-function getDistributionData(distribution) {
-  if (!Array.isArray(distribution?.cluster)) {
-    return [];
-  }
-
-  return distribution.cluster.map((cluster, index) => ({
-    cluster: `Cluster ${cluster}`,
-    players: isFiniteNumber(distribution.jumlah_pemain?.[index])
-      ? distribution.jumlah_pemain[index]
+function getDistributionData(personas) {
+  return personas.map((persona) => ({
+    persona:
+      typeof persona.persona === "string" && persona.persona.trim()
+        ? persona.persona
+        : `Kelompok ${persona.cluster}`,
+    players: isFiniteNumber(persona.total_players)
+      ? persona.total_players
       : null,
   }));
 }
 
-function getSentimentData(sentiment) {
-  if (!Array.isArray(sentiment?.cluster)) {
+function getSentimentData(summary) {
+  const distribution = summary?.distribution;
+  if (!distribution || typeof distribution !== "object") {
     return [];
   }
 
-  return sentiment.cluster.map((cluster, index) => ({
-    cluster: `Cluster ${cluster}`,
-    positive: isFiniteNumber(sentiment.positif?.[index])
-      ? sentiment.positif[index]
-      : null,
-    negative: isFiniteNumber(sentiment.negatif?.[index])
-      ? sentiment.negatif[index]
-      : null,
-  }));
+  return [
+    {
+      sentiment: "Positif",
+      sentimentKey: "POSITIVE",
+      reviews: distribution.POSITIVE,
+    },
+    {
+      sentiment: "Negatif",
+      sentimentKey: "NEGATIVE",
+      reviews: distribution.NEGATIVE,
+    },
+  ].filter((item) => isFiniteNumber(item.reviews));
 }
 
 function ChartEmptyState() {
   return (
-    <div className="dashboard-chart-empty">
-      Data grafik belum tersedia di Firestore.
+    <div className="dashboard-chart-empty" role="status">
+      Belum ada informasi yang cukup untuk menampilkan visualisasi ini.
     </div>
   );
 }
 
 function Dashboard() {
-  const [dashboard, setDashboard] = useState(null);
+  const [summary, setSummary] = useState(null);
   const [personas, setPersonas] = useState([]);
   const [status, setStatus] = useState("loading");
-  const [errorMessage, setErrorMessage] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
 
-    async function loadDashboard() {
+    async function loadOverview() {
       setStatus("loading");
-      setErrorMessage("");
 
       try {
-        const [summaryResult, personaResult] = await Promise.allSettled([
+        const [summaryResult, personaResult] = await Promise.all([
           getDashboardSummary(),
           getPersonas(),
         ]);
-        const summaryIsMissing =
-          summaryResult.status === "rejected" &&
-          summaryResult.reason instanceof Error &&
-          summaryResult.reason.message ===
-            "Dokumen dashboard_summaries/persona_dashboard tidak ditemukan.";
-
-        if (personaResult.status === "rejected") {
-          throw personaResult.reason;
-        }
-
-        if (summaryResult.status === "rejected" && !summaryIsMissing) {
-          throw summaryResult.reason;
-        }
 
         if (active) {
-          setDashboard(
-            summaryResult.status === "fulfilled" ? summaryResult.value : null,
-          );
-          setPersonas(personaResult.value);
+          setSummary(summaryResult);
+          setPersonas(personaResult);
           setStatus("success");
         }
-      } catch (error) {
+      } catch {
         if (active) {
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : "Terjadi kesalahan saat mengambil data Dashboard.",
-          );
           setStatus("error");
         }
       }
     }
 
-    loadDashboard();
+    loadOverview();
 
     return () => {
       active = false;
@@ -128,73 +113,55 @@ function Dashboard() {
   }, [reloadKey]);
 
   const distributionData = useMemo(
-    () => getDistributionData(dashboard?.grafik_distribusi),
-    [dashboard],
+    () => getDistributionData(personas),
+    [personas],
   );
   const sentimentData = useMemo(
-    () => getSentimentData(dashboard?.grafik_sentimen),
-    [dashboard],
+    () => getSentimentData(summary),
+    [summary],
   );
   const sortedPersonas = useMemo(
-    () =>
-      [...personas].sort((first, second) => {
-        const firstCluster = isFiniteNumber(first.cluster)
-          ? first.cluster
-          : Number.POSITIVE_INFINITY;
-        const secondCluster = isFiniteNumber(second.cluster)
-          ? second.cluster
-          : Number.POSITIVE_INFINITY;
-        return firstCluster - secondCluster;
-      }),
+    () => [...personas].sort((first, second) => first.cluster - second.cluster),
     [personas],
+  );
+  const maxPlayers = Math.max(
+    1,
+    ...distributionData.map((item) => item.players ?? 0),
   );
 
   const totalPlayers =
     personas.length > 0 &&
-    personas.every((persona) => isFiniteNumber(persona.jumlah_pemain))
-      ? personas.reduce((total, persona) => total + persona.jumlah_pemain, 0)
+    personas.every((persona) => isFiniteNumber(persona.total_players))
+      ? personas.reduce((total, persona) => total + persona.total_players, 0)
       : null;
-
   const hasAnyData =
-    isFiniteNumber(dashboard?.jumlah_persona) ||
-    distributionData.some((item) => item.players !== null) ||
-    sentimentData.some(
-      (item) => item.positive !== null || item.negative !== null,
-    ) ||
+    isFiniteNumber(summary?.total_reviews_analyzed) ||
+    sentimentData.length > 0 ||
     personas.length > 0;
 
   return (
     <div className="dashboard-page">
-      <div className="dashboard-heading">
-        <div>
-          <p className="eyebrow">Ringkasan analitik</p>
-          <h2>Steam Review Dashboard</h2>
-          <p className="dashboard-description">
-            Gambaran distribusi pemain, sentimen, dan persona dari data yang
-            tersedia.
-          </p>
-        </div>
-        {status === "success" && (
-          <span className="dashboard-source">
-            {typeof dashboard?.sumber === "string"
-              ? dashboard.sumber
-              : "Sumber data"}
-          </span>
-        )}
-      </div>
+      <HeroBanner
+        label="OVERVIEW"
+        title="Ringkasan Analitik"
+        description="Gambaran umum tanggapan pemain dan karakteristik kelompok pemain untuk membantu memahami kondisi game secara menyeluruh."
+      />
 
       {status === "loading" && (
         <div className="dashboard-state" role="status" aria-live="polite">
           <span className="loading-indicator" aria-hidden="true" />
-          <span>Memuat data Dashboard dari Firestore...</span>
+          <span>Menyiapkan ringkasan analitik...</span>
         </div>
       )}
 
       {status === "error" && (
         <div className="dashboard-error" role="alert">
           <div>
-            <h3>Data Dashboard gagal dimuat</h3>
-            <p>{errorMessage}</p>
+            <h3>Data Overview gagal dimuat</h3>
+            <p>
+              Ringkasan belum dapat ditampilkan. Silakan coba beberapa saat
+              lagi.
+            </p>
           </div>
           <button
             className="dashboard-retry"
@@ -208,199 +175,192 @@ function Dashboard() {
 
       {status === "success" && !hasAnyData && (
         <div className="dashboard-empty" role="status">
-          Data Dashboard dan persona belum tersedia di Firestore.
+          Ringkasan belum tersedia. Belum ada informasi yang dapat ditampilkan.
         </div>
       )}
 
       {status === "success" && hasAnyData && (
         <>
           <section className="dashboard-stat-grid" aria-label="Statistik utama">
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">Jumlah persona</p>
-              <p className="dashboard-stat-value">
-                {formatNumber(dashboard?.jumlah_persona)}
-              </p>
-              <p className="dashboard-stat-note">
-                Berdasarkan ringkasan Dashboard
-              </p>
-            </article>
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">Total pemain</p>
-              <p className="dashboard-stat-value">
-                {formatNumber(totalPlayers)}
-              </p>
-              <p className="dashboard-stat-note">
-                Jumlah pemain dari seluruh persona
-              </p>
-            </article>
+            <StatCard
+              icon={Users}
+              label="Kelompok pemain"
+              value={formatNumber(personas.length)}
+              note="Jumlah kelompok yang tersedia"
+              tone="tone-blue"
+            />
+            <StatCard
+              icon={UserRound}
+              label="Total pemain"
+              value={formatNumber(totalPlayers)}
+              note="Pemain yang tercakup dalam ringkasan kelompok"
+              tone="tone-teal"
+            />
+            <StatCard
+              icon={MessageSquareText}
+              label="Ulasan dianalisis"
+              value={formatNumber(summary?.total_reviews_analyzed)}
+              note="Total ulasan yang telah dianalisis"
+              tone="tone-orange"
+            />
           </section>
 
-          <section className="dashboard-chart-grid" aria-label="Grafik Dashboard">
-            <article className="dashboard-panel">
-              <div className="dashboard-panel-heading">
-                <div>
-                  <h3>Distribusi pemain</h3>
-                  <p>Jumlah pemain pada setiap cluster</p>
-                </div>
-              </div>
+          <section className="dashboard-chart-grid" aria-label="Grafik Overview">
+            <ChartCard
+              id="persona-distribution-title"
+              title="Distribusi pemain SAW"
+              description="Jumlah pemain dalam setiap kelompok"
+            >
               {distributionData.some((item) => item.players !== null) ? (
-                <div className="dashboard-chart">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={distributionData}
-                      margin={{ top: 12, right: 12, left: 4, bottom: 4 }}
-                    >
-                      <CartesianGrid
-                        stroke="#e2e8f0"
-                        strokeDasharray="3 3"
-                        vertical={false}
-                      />
-                      <XAxis
-                        axisLine={false}
-                        dataKey="cluster"
-                        tick={{ fill: "#64748b", fontSize: 12 }}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        axisLine={false}
-                        tick={{ fill: "#94a3b8", fontSize: 11 }}
-                        tickFormatter={formatNumber}
-                        tickLine={false}
-                        width={72}
-                      />
-                      <Tooltip
-                        formatter={(value) => [formatNumber(value), "Pemain"]}
-                        contentStyle={{
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 10,
-                          background: "#ffffff",
-                          color: "#1e293b",
-                        }}
-                      />
-                      <Bar
-                        dataKey="players"
-                        name="Pemain"
-                        fill="#2563eb"
-                        radius={[5, 5, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="distribution-list">
+                  {distributionData.map((item, index) => (
+                    <div className="distribution-row" key={item.persona}>
+                      <div className="distribution-row-label">
+                        <span>{item.persona}</span>
+                        <strong>{formatNumber(item.players)}</strong>
+                      </div>
+                      <div
+                        className={`distribution-track tone-${["blue", "teal", "orange"][index % 3]}`}
+                        role="meter"
+                        aria-label={`Jumlah pemain pada ${item.persona}`}
+                        aria-valuemin={0}
+                        aria-valuemax={maxPlayers}
+                        aria-valuenow={item.players ?? 0}
+                        aria-valuetext={
+                          item.players === null
+                            ? "Data tidak tersedia"
+                            : `${formatNumber(item.players)} pemain`
+                        }
+                      >
+                        <span
+                          className="distribution-fill"
+                          style={{
+                            width:
+                              item.players === null
+                                ? "0%"
+                                : `${(item.players / maxPlayers) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <ChartEmptyState />
               )}
-            </article>
+            </ChartCard>
 
-            <article className="dashboard-panel">
-              <div className="dashboard-panel-heading">
-                <div>
-                  <h3>Distribusi sentimen</h3>
-                  <p>Perbandingan positif dan negatif per cluster</p>
-                </div>
-              </div>
-              {sentimentData.some(
-                (item) => item.positive !== null || item.negative !== null,
-              ) ? (
-                <div className="dashboard-chart">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={sentimentData}
-                      margin={{ top: 12, right: 12, left: 4, bottom: 4 }}
-                    >
-                      <CartesianGrid
-                        stroke="#e2e8f0"
-                        strokeDasharray="3 3"
-                        vertical={false}
-                      />
-                      <XAxis
-                        axisLine={false}
-                        dataKey="cluster"
-                        tick={{ fill: "#64748b", fontSize: 12 }}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        axisLine={false}
-                        tick={{ fill: "#94a3b8", fontSize: 11 }}
-                        tickFormatter={(value) => `${formatNumber(value)}%`}
-                        tickLine={false}
-                        width={72}
-                      />
-                      <Tooltip
-                        formatter={(value, name) => [
-                          formatPercentage(value),
-                          name,
-                        ]}
-                        contentStyle={{
-                          border: "1px solid #cbd5e1",
-                          borderRadius: 10,
-                          background: "#ffffff",
-                          color: "#1e293b",
-                        }}
-                      />
-                      <Legend />
-                      <Bar
-                        dataKey="positive"
-                        name="Positif"
-                        fill="#16a34a"
-                        radius={[4, 4, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="negative"
-                        name="Negatif"
-                        fill="#dc2626"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+            <ChartCard
+              id="sentiment-distribution-title"
+              title="Distribusi sentimen keseluruhan"
+              description="Jumlah ulasan positif dan negatif"
+            >
+              {sentimentData.length > 0 ? (
+                <div className="sentiment-donut-layout">
+                  <div className="sentiment-donut">
+                    <span className="sentiment-donut-center" aria-hidden="true">
+                      Sentimen
+                    </span>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={sentimentData}
+                          dataKey="reviews"
+                          nameKey="sentiment"
+                          innerRadius="64%"
+                          outerRadius="88%"
+                          paddingAngle={3}
+                          stroke="none"
+                        >
+                          {sentimentData.map((item) => (
+                            <Cell
+                              key={item.sentimentKey}
+                              fill={sentimentColors[item.sentimentKey]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={chartTooltipStyle}
+                          formatter={(value) => [
+                            formatNumber(value),
+                            "Ulasan",
+                          ]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <ul
+                    className="sentiment-donut-legend"
+                    aria-label="Legenda sentimen"
+                  >
+                    {sentimentData.map((item) => (
+                      <li key={item.sentimentKey}>
+                        <span
+                          className={`sentiment-legend-dot ${item.sentimentKey.toLowerCase()}`}
+                          aria-hidden="true"
+                        />
+                        <span>{item.sentiment}</span>
+                        <strong>{formatNumber(item.reviews)}</strong>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ) : (
                 <ChartEmptyState />
               )}
-            </article>
+            </ChartCard>
           </section>
+
+          <ChartCard
+            id="positive-sentiment-trend-title"
+            title="Tren sentimen positif"
+            description="Perubahan tanggapan positif dari waktu ke waktu"
+            className="dashboard-trend-card"
+          >
+            <div className="dashboard-chart-empty" role="status">
+              Belum ada data tren sentimen per periode untuk ditampilkan.
+            </div>
+          </ChartCard>
 
           <section className="dashboard-panel dashboard-personas">
             <div className="dashboard-panel-heading">
               <div>
-                <h3>Ringkasan persona</h3>
-                <p>Profil persona yang tersedia di koleksi Firestore</p>
+                <h3>Ringkasan persona SAW</h3>
+                <p>Jumlah pemain dan rata-rata indikator pada tiap kelompok</p>
               </div>
             </div>
             {sortedPersonas.length > 0 ? (
               <div className="persona-card-grid">
-                {sortedPersonas.map((persona, index) => (
-                  <article
-                    className="persona-summary-card"
-                    key={persona.id ?? `persona-${index}`}
-                  >
+                {sortedPersonas.map((persona) => (
+                  <article className="persona-summary-card" key={persona.id}>
                     <div className="persona-card-heading">
                       <h4>
-                        {typeof persona.nama_persona === "string" &&
-                        persona.nama_persona.trim()
-                          ? persona.nama_persona
-                          : "Nama persona tidak tersedia"}
+                        {typeof persona.persona === "string" &&
+                        persona.persona.trim()
+                          ? persona.persona
+                          : `Cluster ${persona.cluster}`}
                       </h4>
                       <span className="persona-cluster">
-                        {isFiniteNumber(persona.cluster)
-                          ? `Cluster ${persona.cluster}`
-                          : "Cluster —"}
+                        Kelompok {persona.cluster}
                       </span>
                     </div>
                     <p className="persona-player-count">
-                      {formatNumber(persona.jumlah_pemain)}
+                      {formatNumber(persona.total_players)}
                       <span> pemain</span>
                     </p>
                     <div className="persona-sentiment">
                       <span>
-                        Positif{" "}
-                        <strong>
-                          {formatPercentage(persona.persentase_positif)}
-                        </strong>
+                        Skor SAW{" "}
+                        <strong>{formatNumber(persona.avg_saw_score)}</strong>
                       </span>
                       <span>
-                        Negatif{" "}
+                        Rata-rata ulasan{" "}
+                        <strong>{formatNumber(persona.avg_reviews)}</strong>
+                      </span>
+                      <span>
+                        Rata-rata playtime{" "}
                         <strong>
-                          {formatPercentage(persona.persentase_negatif)}
+                          {formatNumber(persona.avg_playtime_hours)} jam
                         </strong>
                       </span>
                     </div>
@@ -409,7 +369,7 @@ function Dashboard() {
               </div>
             ) : (
               <div className="dashboard-section-empty">
-                Data persona belum tersedia di Firestore.
+                Ringkasan kelompok pemain belum tersedia.
               </div>
             )}
           </section>

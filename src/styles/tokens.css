@@ -1,0 +1,35 @@
+:root {
+  --font-family: "Plus Jakarta Sans", sans-serif;
+
+  --color-surface: #ffffff;
+  --color-page: #f3f5fa;
+  --color-border: #e5e9f2;
+  --color-primary: #5b8dd6;
+  --color-primary-ink: #2f5fa8;
+  --color-primary-soft: #e6eefa;
+  --color-primary-tint: rgb(91 141 214 / 12%);
+  --color-brand-blue: #3b6bb5;
+  --color-hero: #dce8f8;
+  --color-teal: #5fb3c4;
+  --color-teal-track: #e8f6f9;
+  --color-orange: #e39a6b;
+  --color-orange-track: #fdf1e8;
+  --color-positive: #4fa879;
+  --color-neutral: #94a3b8;
+  --color-negative: #e07b7b;
+  --color-text: #0f172a;
+  --color-muted: #64748b;
+  --color-nav: #475569;
+
+  --shadow-card: 0 1px 3px rgb(15 23 42 / 6%);
+  --radius-card: 20px;
+  --space-section: 22px;
+
+  --color-ink: var(--color-text);
+  --color-surface-soft: #f8fafc;
+  --color-blue: var(--color-primary);
+  --color-blue-soft: var(--color-primary-soft);
+  --color-sage: var(--color-positive);
+  --color-rose: var(--color-negative);
+  --color-amber: var(--color-orange);
+}

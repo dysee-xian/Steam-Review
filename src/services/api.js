@@ -3,16 +3,33 @@ const API_BASE_URL = (
 ).replace(/\/+$/, "");
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers: {
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...options.headers,
+      },
+    });
+  } catch (error) {
+    throw new Error(
+      `Backend tidak dapat dihubungi di ${API_BASE_URL}. Periksa alamat API dan koneksi jaringan.`,
+      { cause: error },
+    );
+  }
 
   if (!response.ok) {
-    const message = await response.text();
+    const body = await response.text();
+    let message = body;
+    try {
+      const parsed = JSON.parse(body);
+      if (typeof parsed.detail === "string") {
+        message = parsed.detail;
+      }
+    } catch {
+      // Keep the response body as the error message when it is not JSON.
+    }
     throw new Error(
       message || `Permintaan API gagal dengan status ${response.status}.`,
     );
@@ -30,14 +47,13 @@ export const analyzeSentiment = (review) =>
     body: JSON.stringify({ review }),
   });
 
-export const getPlayerPersona = (payload) =>
-  request("/persona", {
+export const analyzeAspects = (review) =>
+  request("/absa", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ review }),
   });
 
-export const predictPlaytime = (payload) =>
-  request("/prediction", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+export const getPersonaBatchAnalysis = () => request("/persona/batch");
+
+export const getEngagementBatchAnalysis = () =>
+  request("/prediction/batch");

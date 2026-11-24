@@ -1,26 +1,22 @@
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "./firebase";
+import { get, ref } from "firebase/database";
+import { database } from "./firebase";
 
 export async function getDashboardSummary() {
-  let snapshot;
+  const path = "steam_review_analytics/v1/sentiment_analysis";
 
   try {
-    snapshot = await getDoc(
-      doc(db, "dashboard_summaries", "persona_dashboard"),
-    );
+    const snapshot = await get(ref(database, path));
+
+    if (!snapshot.exists()) {
+      throw new Error(`Node ${path} tidak ditemukan.`);
+    }
+
+    return snapshot.val();
   } catch (error) {
     const details = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Gagal mengambil dashboard_summaries/persona_dashboard: ${details}`,
+      `Gagal membaca ${path}: ${details}`,
       { cause: error },
     );
   }
-
-  if (!snapshot.exists()) {
-    throw new Error(
-      "Dokumen dashboard_summaries/persona_dashboard tidak ditemukan.",
-    );
-  }
-
-  return snapshot.data();
 }
