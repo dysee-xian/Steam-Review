@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  CircleCheck,
+  CircleX,
+  Users,
+} from "lucide-react";
 import { getEngagementBatchAnalysis } from "../services/api";
 import HeroBanner from "../components/ui/HeroBanner";
+import ChartCard from "../components/ui/ChartCard";
+import StatCard from "../components/ui/StatCard";
 
 const numberFormatter = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 4,
@@ -114,90 +122,72 @@ function EngagementDeclinePrediction() {
           )}
 
           <section
-            className="dashboard-stat-grid"
+            className="dashboard-stat-grid engagement-stats-grid"
             aria-label="Ringkasan prediksi keterlibatan"
           >
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">Pemain yang diprediksi</p>
-              <p className="dashboard-stat-value">—</p>
-            </article>
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">Keterlibatan menurun</p>
-              <p className="dashboard-stat-value">—</p>
-            </article>
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">
-                Persentase keterlibatan menurun
-              </p>
-              <p className="dashboard-stat-value">—</p>
-            </article>
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">
-                Keterlibatan tidak menurun
-              </p>
-              <p className="dashboard-stat-value">—</p>
-            </article>
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">
-                Persentase keterlibatan tidak menurun
-              </p>
-              <p className="dashboard-stat-value">—</p>
-            </article>
+            <StatCard
+              icon={Users}
+              label="Pemain yang diprediksi"
+              value="—"
+              note="Prediksi batch belum tersedia"
+              tone="tone-blue"
+            />
+            <StatCard
+              icon={Activity}
+              label="Keterlibatan menurun"
+              value="—"
+              note="Belum dapat dihitung"
+              tone="tone-orange"
+            />
+            <StatCard
+              icon={Activity}
+              label="Persentase menurun"
+              value="—"
+              note="Belum dapat dihitung"
+              tone="tone-orange"
+            />
+            <StatCard
+              icon={CircleCheck}
+              label="Tidak menurun"
+              value="—"
+              note="Belum dapat dihitung"
+              tone="tone-teal"
+            />
+            <StatCard
+              icon={CircleX}
+              label="Persentase tidak menurun"
+              value="—"
+              note="Belum dapat dihitung"
+              tone="tone-rose"
+            />
           </section>
 
-          <section
-            className="sentiment-section"
-            aria-labelledby="engagement-distribution-title"
+          <ChartCard
+            id="engagement-distribution-title"
+            title="Hasil menurut tingkat keterlibatan"
+            description="Distribusi hasil akan tersedia setelah fitur pemain yang diperlukan dapat dibentuk dari sumber data."
           >
-            <div className="sentiment-section-heading">
-              <div>
-                <h3 id="engagement-distribution-title">
-                  Hasil menurut tingkat keterlibatan
-                </h3>
-                <p>
-                  Perbandingan jumlah pemain pada setiap kategori akan muncul
-                  setelah data analisis tersedia.
-                </p>
-              </div>
-            </div>
             <div className="dashboard-empty" role="status">
-              Belum ada hasil untuk divisualisasikan.
+              Belum ada prediksi per pemain untuk divisualisasikan.
             </div>
-          </section>
+          </ChartCard>
 
-          <section
-            className="sentiment-section"
-            aria-labelledby="engagement-players-title"
+          <ChartCard
+            id="engagement-players-title"
+            title="Hasil analisis pemain"
+            description="Rincian hanya ditampilkan jika seluruh data aktivitas yang diperlukan tersedia."
           >
-            <div className="sentiment-section-heading">
-              <div>
-                <h3 id="engagement-players-title">Ringkasan pemain</h3>
-                <p>
-                  Rincian pemain hanya akan ditampilkan jika tersedia data
-                  aktivitas yang lengkap.
-                </p>
-              </div>
-            </div>
             <div className="dashboard-empty" role="status">
-              Belum ada rincian pemain yang dapat ditampilkan.
+              Belum ada rincian hasil prediksi pemain.
             </div>
-          </section>
+          </ChartCard>
 
           {model && (
-            <section
-              className="playtime-section"
-              aria-labelledby="engagement-model-title"
+            <ChartCard
+              id="engagement-model-title"
+              title="Tentang metode analisis"
+              description="Model menggunakan gradient boosting untuk mempelajari pola aktivitas. Batas keputusan mengikuti konfigurasi model."
             >
-              <div className="playtime-section-heading">
-                <div>
-                  <h3 id="engagement-model-title">Tentang metode analisis</h3>
-                  <p>
-                    Model menggunakan gradient boosting untuk mempelajari pola
-                    aktivitas. Batas keputusan saat ini mengikuti pengaturan
-                    yang telah ditetapkan.
-                  </p>
-                </div>
-              </div>
               <dl className="analysis-result-grid">
                 <div>
                   <dt>Metode</dt>
@@ -221,14 +211,12 @@ function EngagementDeclinePrediction() {
                   ),
                 )}
               </dl>
-              <div className="sentiment-section-heading">
-                <div>
-                  <h3>Metrik evaluasi tersimpan</h3>
-                  <p>
-                    Nilai berikut mengukur kinerja model pada evaluasi
-                    sebelumnya; nilai tersebut bukan jumlah prediksi saat ini.
-                  </p>
-                </div>
+              <div className="engagement-evaluation-heading">
+                <h3>Metrik evaluasi tersimpan</h3>
+                <p>
+                  Metrik ini mengukur kinerja model saat evaluasi sebelumnya,
+                  bukan jumlah prediksi pemain saat ini.
+                </p>
               </div>
               {evaluationMetrics.length > 0 ? (
                 <div className="playtime-metric-grid">
@@ -244,7 +232,7 @@ function EngagementDeclinePrediction() {
                   Metrik evaluasi belum tersedia.
                 </div>
               )}
-            </section>
+            </ChartCard>
           )}
         </>
       )}

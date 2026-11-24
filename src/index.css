@@ -2571,6 +2571,65 @@ body,
   color: #92532f;
 }
 
+.stat-card.tone-rose .stat-card-icon {
+  background: #fceeee;
+  color: #a64e4e;
+}
+
+.persona-stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.engagement-stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.persona-data-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid #dce6f3;
+  border-radius: 16px;
+  background: #f7faff;
+  color: #475569;
+}
+
+.persona-data-note-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-ink);
+}
+
+.persona-data-note p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.engagement-evaluation-heading {
+  margin-top: 24px;
+}
+
+.engagement-evaluation-heading h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.engagement-evaluation-heading p {
+  margin: 6px 0 0;
+  color: var(--color-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
 .stat-card-content {
   min-width: 0;
 }
@@ -2938,9 +2997,17 @@ textarea:focus-visible {
   .dashboard-chart-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .persona-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
+  .engagement-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .dashboard-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3032,7 +3099,9 @@ textarea:focus-visible {
   .dashboard-stat-grid,
   .sentiment-summary-grid,
   .absa-stat-grid,
-  .persona-detail-grid {
+  .persona-detail-grid,
+  .persona-stats-grid,
+  .engagement-stats-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 

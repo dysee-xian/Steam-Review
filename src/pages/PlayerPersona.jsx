@@ -9,6 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ArrowDown, ArrowUp, Gauge, Users } from "lucide-react";
 import { getPersonaBatchAnalysis } from "../services/api";
 import {
   chartAxis,
@@ -18,6 +19,8 @@ import {
   chartTooltipStyle,
 } from "../components/chartTheme";
 import HeroBanner from "../components/ui/HeroBanner";
+import ChartCard from "../components/ui/ChartCard";
+import StatCard from "../components/ui/StatCard";
 
 const numberFormatter = new Intl.NumberFormat("id-ID", {
   maximumFractionDigits: 4,
@@ -119,59 +122,55 @@ function PlayerPersona() {
 
       {status === "success" && analysis?.analysis_status === "summary_only" && (
         <>
-          <div className="dashboard-empty" role="status">
-            Informasi yang tersedia saat ini berupa ringkasan per kelompok,
-            bukan catatan setiap pemain. Karena itu skor tertinggi/terendah,
-            sebaran skor individual, dan hasil per pemain belum dapat
-            ditampilkan.
+          <div className="persona-data-note" role="status">
+            <span className="persona-data-note-icon" aria-hidden="true">
+              <Users size={18} />
+            </span>
+            <p>
+              Ringkasan ini dihitung dari data agregat kelompok yang tersedia.
+              Skor tertinggi dan terendah per individu belum tersedia.
+            </p>
           </div>
 
-          <section className="dashboard-stat-grid" aria-label="Ringkasan SAW">
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">
-                Pemain dalam ringkasan kelompok
-              </p>
-              <p className="dashboard-stat-value">
-                {formatNumber(analysis.players_in_summary)}
-              </p>
-            </article>
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">
-                Rata-rata skor SAW dari agregat
-              </p>
-              <p className="dashboard-stat-value">
-                {formatNumber(analysis.average_saw_score)}
-              </p>
-            </article>
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">
-                Skor tertinggi individual
-              </p>
-              <p className="dashboard-stat-value">—</p>
-            </article>
-            <article className="dashboard-stat-card">
-              <p className="dashboard-stat-label">
-                Skor terendah individual
-              </p>
-              <p className="dashboard-stat-value">—</p>
-            </article>
+          <section
+            className="dashboard-stat-grid persona-stats-grid"
+            aria-label="Ringkasan SAW"
+          >
+            <StatCard
+              icon={Users}
+              label="Pemain dalam ringkasan"
+              value={formatNumber(analysis.players_in_summary)}
+              note="Jumlah pada kelompok yang tersedia"
+              tone="tone-blue"
+            />
+            <StatCard
+              icon={Gauge}
+              label="Rata-rata skor SAW"
+              value={formatNumber(analysis.average_saw_score)}
+              note="Rata-rata tertimbang dari agregat"
+              tone="tone-teal"
+            />
+            <StatCard
+              icon={ArrowUp}
+              label="Skor tertinggi individu"
+              value="—"
+              note="Data individual belum tersedia"
+              tone="tone-orange"
+            />
+            <StatCard
+              icon={ArrowDown}
+              label="Skor terendah individu"
+              value="—"
+              note="Data individual belum tersedia"
+              tone="tone-rose"
+            />
           </section>
 
-          <section
-            className="sentiment-section"
-            aria-labelledby="persona-score-chart-title"
+          <ChartCard
+            id="persona-score-chart-title"
+            title="Rata-rata skor SAW per kelompok"
+            description="Perbandingan nilai rata-rata kelompok, bukan skor setiap pemain."
           >
-            <div className="sentiment-section-heading">
-              <div>
-                <h3 id="persona-score-chart-title">
-                  Rata-rata skor SAW per kelompok
-                </h3>
-                <p>
-                  Perbandingan ini menunjukkan nilai rata-rata kelompok, bukan
-                  sebaran skor setiap pemain.
-                </p>
-              </div>
-            </div>
             {groupScoreData.length > 0 ? (
               <div className="sentiment-chart">
                 <ResponsiveContainer width="100%" height="100%">
@@ -224,23 +223,13 @@ function PlayerPersona() {
                 Data agregat skor persona belum tersedia.
               </div>
             )}
-          </section>
+          </ChartCard>
 
-          <section
-            className="sentiment-section"
-            aria-labelledby="persona-contribution-title"
+          <ChartCard
+            id="persona-contribution-title"
+            title="Kontribusi indikator terhadap skor SAW"
+            description="Kontribusi berdasarkan rata-rata indikator kelompok, bobot, dan acuan normalisasi yang telah ditetapkan."
           >
-            <div className="sentiment-section-heading">
-              <div>
-                <h3 id="persona-contribution-title">
-                  Kontribusi indikator terhadap skor SAW
-                </h3>
-                <p>
-                  Dihitung dari rata-rata indikator kelompok menggunakan bobot
-                  dan acuan normalisasi yang ditetapkan.
-                </p>
-              </div>
-            </div>
             {contributionData.length > 0 ? (
               <div className="sentiment-chart">
                 <ResponsiveContainer width="100%" height="100%">
@@ -293,23 +282,13 @@ function PlayerPersona() {
                 Kontribusi kriteria belum dapat dihitung.
               </div>
             )}
-          </section>
+          </ChartCard>
 
-          <section
-            className="sentiment-section"
-            aria-labelledby="persona-group-table-title"
+          <ChartCard
+            id="persona-group-table-title"
+            title="Ringkasan kelompok pemain"
+            description="Jumlah pemain dan rata-rata indikator pada setiap kelompok."
           >
-            <div className="sentiment-section-heading">
-              <div>
-                <h3 id="persona-group-table-title">
-                  Ringkasan kelompok pemain
-                </h3>
-                <p>
-                  Tabel ini menunjukkan jumlah pemain dan rata-rata indikator
-                  pada setiap kelompok.
-                </p>
-              </div>
-            </div>
             {groups.length > 0 ? (
               <div className="absa-table-wrapper">
                 <table className="absa-table">
@@ -354,11 +333,11 @@ function PlayerPersona() {
                 Ringkasan kelompok persona tidak tersedia.
               </div>
             )}
-          </section>
+          </ChartCard>
 
-          <div className="dashboard-empty" role="status">
-            Data individual belum tersedia. Hasil per pemain dan distribusi
-            skor akan tetap kosong sampai catatan pemain tersedia.
+          <div className="dashboard-chart-empty" role="status">
+            Distribusi skor dan tabel hasil per pemain belum dapat ditampilkan
+            karena sumber saat ini hanya menyediakan ringkasan agregat.
           </div>
         </>
       )}
