@@ -52,6 +52,10 @@ else:
         os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
     ]
 
+for dev_origin in ("http://localhost:5173", "http://localhost:5174"):
+    if dev_origin not in allowed_origins:
+        allowed_origins.append(dev_origin)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
